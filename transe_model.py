@@ -10,6 +10,14 @@ from transformers import AutoModel, AutoTokenizer
 from utils import *
 
 
+def _get_attribute_len(attribute):
+    _len = 0
+    for i in attribute:
+        if i != 0:
+            _len += 1
+    return _len
+
+
 class KnowledgeEmbedding(nn.Module):
     def __init__(self, dataset, args):
         super(KnowledgeEmbedding, self).__init__()
@@ -21,22 +29,16 @@ class KnowledgeEmbedding(nn.Module):
         self.relu = nn.ReLU()
         if args.dataset == Aier_EYE:
             self.attributes_num = dataset.attribute.vocab_size
-        self.model_type = args.model_type
+        self.enhanced_type = args.enhanced_type
         self.embedding_type = args.embedding_type
 
-        if self.model_type == 'bert':
+        if self.enhanced_type == 'bert':
             self.bert = AutoModel.from_pretrained('cyclone/simcse-chinese-roberta-wwm-ext')
             self.pooler = nn.Linear(768, self.embed_size)
             self.tokenizer = AutoTokenizer.from_pretrained('cyclone/simcse-chinese-roberta-wwm-ext')
-        elif self.model_type == 'atten':
-            self.WQ = nn.Linear(self.embed_size, self.embed_size)
-            self.WK = nn.Linear(self.embed_size, self.embed_size)
-            self.WV = nn.Linear(self.embed_size, self.embed_size)
-            setattr(self, 'attribute', self._entity_embedding(self.attributes_num))
-        elif self.model_type == 'w2v':
+        elif self.enhanced_type == 'w2v':
             #   w2v模型输出向量维度为512
             self.pooler = nn.Linear(512, self.embed_size, bias=False).float()
-
             with open('data/dictionary/attribute.txt', 'rb') as f:
                 attribute = list(pickle.load(f).keys())
             attribute = [attribute[-1]] + attribute[:-1]
@@ -57,7 +59,7 @@ class KnowledgeEmbedding(nn.Module):
                 else:
                     embedding.append(temp / word_count)
             setattr(self, 'attribute', np.array(embedding))
-        elif self.model_type == 'embedding':
+        elif self.enhanced_type == 'embedding':
             embed = self._entity_embedding(self.attributes_num)
             setattr(self, 'attribute', embed)
 
@@ -115,29 +117,12 @@ class KnowledgeEmbedding(nn.Module):
                 setattr(self, r + '_hype', embed)
 
         self.to(args.device)
-        # elif self.embedding_type == 'DistMult':
-
-        #   计算attention分数
-
-    def dot_product_attention(self, my_input):
-        Q = self.WQ(my_input)
-        K = self.WK(my_input)
-        V = self.WV(my_input)
-        score = torch.softmax(torch.bmm(Q, K.transpose(1, 2)), -1) / math.sqrt(attr_num)
-        re = torch.sum(torch.bmm(score, V), dim=1)
-        return re
 
     def _get_attribute_vec(self, attributes, embed_type):
         attributes_idxs = attributes[0]
         attributes_texts = attributes[1]
-        if embed_type == 'atten':
-            attribute_embedding = getattr(self, 'attribute')  # nn.Embedding
-            embed_input = torch.from_numpy(attributes_idxs).to(self.device)
-            out = torch.relu(attribute_embedding(embed_input))
-            attr_vec = self.dot_product_attention(out)
-        #   bert 嵌入方法有待更改
-        elif embed_type == 'bert':
-            attr_vec = []
+        attr_vec = []
+        if embed_type == 'bert':
             for t in attributes_texts:
                 bert_input = self.tokenizer(t, padding=True, truncation=True, return_tensors='pt').to(self.device)
                 out = self.bert(bert_input['input_ids'], bert_input['attention_mask'])[1]
@@ -157,13 +142,6 @@ class KnowledgeEmbedding(nn.Module):
             attr_vec = self.pooler(tensor)
             attr_vec = torch.mean(attr_vec, dim=1)
         return attr_vec
-
-    def _get_attribute_len(self, attribute):
-        _len = 0
-        for i in attribute:
-            if i != 0:
-                _len += 1
-        return _len
 
     def _entity_embedding(self, vocab_size):
         """Create entity embedding of size [vocab_size+1, embed_size].
@@ -279,24 +257,20 @@ class KnowledgeEmbedding(nn.Module):
         if entity_head == HAVE_SYMPTOM:
             attr_vec = self._get_attribute_vec(attributes, self.model_type)
             entity_head_vec += attr_vec
-            # entity_head_vec = torch.cat((entity_head_vec, attr_vec), dim=-1)
 
         else:
             zeros = (np.zeros((batch_size, attr_num), dtype=int), '无记录')
             attr_vec = self._get_attribute_vec(zeros, self.model_type)
             entity_head_vec += attr_vec
-            # entity_head_vec = torch.cat((entity_head_vec, attr_vec), dim=-1)
 
         if entity_tail == HAVE_SYMPTOM:
             attr_vec = self._get_attribute_vec(attributes, self.model_type)
             entity_tail_vec += attr_vec
-            # entity_tail_vec = torch.cat((entity_tail_vec, attr_vec), dim=-1)
 
         else:
             zeros = (np.zeros((batch_size, attr_num), dtype=int), [[''] * attr_num])
             attr_vec = self._get_attribute_vec(zeros, self.model_type)
             entity_tail_vec += attr_vec
-            # entity_tail_vec = torch.cat((entity_tail_vec, attr_vec), dim=-1)
 
         relation_vec = getattr(self, relation)  # [1, embed_size]
         relation_bias_embedding = getattr(self, relation + '_bias')  # nn.Embedding
@@ -304,8 +278,7 @@ class KnowledgeEmbedding(nn.Module):
         neg_sample_idx = torch.multinomial(entity_tail_distrib, self.num_neg_samples, replacement=True).view(-1)
         zeros = (np.zeros((len(neg_sample_idx), attr_num), dtype=int), '无记录')
         neg_vec = entity_tail_embedding(neg_sample_idx) + self._get_attribute_vec(zeros, self.model_type)
-        relation_bias = relation_bias_embedding(torch.from_numpy(entity_tail_idxs.astype(int)).to(self.device)).squeeze(
-            1)
+        relation_bias = relation_bias_embedding(torch.from_numpy(entity_tail_idxs.astype(int)).to(self.device)).squeeze(1)
         #   先属性嵌入，再TranR映射
         if self.embedding_type == 'TransR':
             Mr = getattr(self, 'Mr_' + relation)
@@ -322,7 +295,6 @@ class KnowledgeEmbedding(nn.Module):
                                 neg_vec)
 
     def kg_neg_loss(self, entity_head_vec, entity_tail_vec, relation_vec, relation_bias, neg_vec):
-
         example_vec = entity_head_vec + relation_vec
         example_vec = example_vec.unsqueeze(2)  # [batch_size, embed_size, 1]
         pos_vec = entity_tail_vec.unsqueeze(1)  # [batch_size, 1, embed_size]

@@ -20,9 +20,6 @@ def train(args):
     words_to_train = args.epochs * dataset.review.word_count + 1
     model = KnowledgeEmbedding(dataset, args).to(args.device)
 
-    # for k, v in model.named_parameters():
-    #       print(k)
-
     if args.model_type == 'bert':
         #     分层训练
         bert_params = list(map(id, model.bert.parameters()))
@@ -199,9 +196,9 @@ def main():
     parser.add_argument('--name', type=str, default='train_transe_model', help='model name.')
     parser.add_argument('--seed', type=int, default=123, help='random seed.')
     parser.add_argument('--gpu', type=str, default='2', help='gpu device.')
-    parser.add_argument('--epochs', type=int, default=1000, help='number of epochs to train.')
+    parser.add_argument('--epochs', type=int, default=800, help='number of epochs to train.')
     parser.add_argument('--batch_size', type=int, default=128, help='batch size.')
-    parser.add_argument('--model_type', type=str, default='none', help='model type.bert,atten,none,embedding,w2v')
+    parser.add_argument('--enhanced_type', type=str, default='none', help='model type.bert,atten,none,embedding,w2v')
     parser.add_argument('--lr', type=float, default=0.2, help='learning rate.')
     parser.add_argument('--weight_decay', type=float, default=0, help='weight decay for adam.')
     parser.add_argument('--l2_lambda', type=float, default=0, help='l2 lambda')
@@ -209,7 +206,7 @@ def main():
     parser.add_argument('--embed_size', type=int, default=100, help='knowledge embedding size.')
     parser.add_argument('--num_neg_samples', type=int, default=128, help='number of negative samples.')
     parser.add_argument('--steps_per_checkpoint', type=int, default=1000, help='Number of steps for checkpoint.')
-    parser.add_argument('--embedding_type', type=str, default='TransH',
+    parser.add_argument('--embedding_type', type=str, default='TransE',
                         help='Embedding model type,TransR,TransE or TransH')
 
     args = parser.parse_args()
