@@ -1,11 +1,9 @@
 from __future__ import absolute_import, division, print_function
-
+from utils import attr_num
 import numpy as np
 import pickle
 from easydict import EasyDict as edict
 import random
-
-attr_num = 20
 
 
 class AierEyeDataset(object):
@@ -21,14 +19,12 @@ class AierEyeDataset(object):
             self.review_file = 'data/tmp/Aier_Eye/' + set_name + '.pkl'
         self.load_entities()
         self.load_disease_relations()
-        # self.load_sympotms_relations()
         self.load_reviews()
         self.create_word_sampling_rate(word_sampling_rate)
 
         self.load_sympotms_relations()
         if self.data_dir == './raw_data/Aier_Eye':
             self.load_attribute()
-
 
     def _load_file(self, filename):
         with open(filename, 'rb') as f:
@@ -53,7 +49,6 @@ class AierEyeDataset(object):
                 have_symptom='medical_data/dictionary/症状有.txt',
                 surgery='medical_data/dictionary/手术.txt',
                 medicine='medical_data/dictionary/药物有.txt',
-                # pos_exam='dictionary/检查结果阳性.txt',
                 word='medical_data/dictionary/word.txt',
             )
         else:
@@ -62,7 +57,6 @@ class AierEyeDataset(object):
                 have_symptom='data/dictionary/症状有.txt',
                 surgery='data/dictionary/手术.txt',
                 medicine='data/dictionary/药物有.txt',
-                # pos_exam='dictionary/检查结果阳性.txt',
                 word='data/dictionary/word.txt',
             )
         for name in entity_files:
@@ -149,12 +143,12 @@ class AierEyeDataset(object):
               - `related_disease `: disease -> disease,
 
               Create member variable for each relation associated with following attributes:
-              - `raw_data`: list of list of entity_tail indices (can be empty).
+              - `raw_data`: list of entity_tail indices (can be empty).
               - `et_vocab`: vocabulary of entity_tail (copy from entity vocab).
               - `et_distrib`: frequency of entity_tail vocab.
             """
 
-        if self.data_dir =='Medical/':
+        if self.data_dir == 'Medical/':
             product_relations = edict(
                 disease_symptom=('medical_data/relation/disease_symptom_tail.txt', self.have_symptom),
                 disease_surgery=('medical_data/relation/disease_surgery_tail.txt', self.surgery),
@@ -232,7 +226,6 @@ class DataLoader(object):
         , related_disease_idx,pos_exam,no_symptom,no_disease).
         """
         batch = []
-        #     一条记录的idx
         record_idx = self.review_seq[self.cur_review_i]
         have_symptom_idx, have_disease_idx, word, attribute_idx, attribute_text = self.dataset.review.data[
             record_idx]
@@ -272,7 +265,6 @@ class DataLoader(object):
                         attribute_text.extend([' ' for i in range(attr_num - attribute_idx_len)])
                         data.append(attribute_idx)
                         data.append(attribute_text)
-                # raw_data.append(have_disease_knowledge['attribute_text'])
                 batch.append(data)
 
             # 2) Move to next word/review
