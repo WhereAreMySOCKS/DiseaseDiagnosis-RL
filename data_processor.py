@@ -8,38 +8,33 @@ import os
 import data_utils
 from knowledge_graph import KnowledgeGraph
 
-#     因为原始数据中是中文，这里也使用中文进行判断
 # Entities
-
-
 HAVE_DISEASE = '疾病有'
 HAVE_SYMPTOM = '症状有'
 WORD = 'word'
 SURGERY = '手术'
 MEDICINE = '药物有'
 
-# property
+# Attributes
 POS_EXAM = '检查结果阳性'
 NO_DISEASE = '疾病无'
-# Duration = '时长'
 NO_SYMPTOM = '症状无'
 CAUSE = '诱因'
-REGURLAR = '规律'
 
-ATTRIBUTE = [NO_DISEASE, NO_SYMPTOM, CAUSE, POS_EXAM]
-ENTITIES = [HAVE_DISEASE, HAVE_SYMPTOM, SURGERY, MEDICINE]
 # Relations
 DISEASE_SYMPTOM = '疾病症状'
 DISEASE_SURGERY = '疾病手术'
 DISEASE_DRUG = '疾病药物'
 RELATED_SYMPTOM = '相关症状'
 RELATED_DISEASE = '相关疾病'
-Relations = [DISEASE_SYMPTOM, DISEASE_SURGERY, DISEASE_DRUG, RELATED_SYMPTOM, RELATED_DISEASE]
+
+ATTRIBUTES = [NO_DISEASE, NO_SYMPTOM, CAUSE, POS_EXAM]
+ENTITIES = [HAVE_DISEASE, HAVE_SYMPTOM, SURGERY, MEDICINE]
+RELATIONS = [DISEASE_SYMPTOM, DISEASE_SURGERY, DISEASE_DRUG, RELATED_SYMPTOM, RELATED_DISEASE]
 raw_data = []
 
 
 def tf_idf(vocab, reviews, word_tfidf_threshold):
-    # (1) Filter words by both tfidf and frequency.
     review_tfidf = compute_tfidf_fast(vocab, reviews)
     all_removed_words = []
     all_remained_words = []
@@ -56,10 +51,10 @@ def tf_idf(vocab, reviews, word_tfidf_threshold):
 
 
 def text_process():
-    '''
+    """
       对数据text部分进行预处理，去除停用词,载入词典。
       保存词典为dictionary/word.txt
-      '''
+    """
     jieba.load_userdict('data/raw_data/user_dict.txt')
     stopwords = [line.strip() for line in open('data/raw_data/stopwords.txt', encoding='utf-8').readlines()]
     text = []
@@ -128,9 +123,9 @@ def create_attribute_dictionary():
 
 def create_dictionary(e_type):
     """
-             读取dataset.json文件，生成各个type的实体词典，存放在dictionary文件夹下
-             save : /dictionary/
-      """
+    读取dataset.json文件，生成各个type的实体词典，存放在dictionary文件夹下
+    save : /dictionary/
+    """
     random.seed(124)
     entities = []
     with open('data/raw_data/dataset.json', encoding='utf-8') as f:
@@ -153,19 +148,19 @@ def create_dictionary(e_type):
 
 def create_structure_data():
     """
-      读取dataset.json文件，创建结构化数据文件
+    读取dataset.json文件，创建结构化数据文件
 
-      HAVE_DISEASE:
-            DISEASE_SYMPTOMS --> HAVE_SYMPTOM
-            DISEASE_SURGERY --> SURGERY_HISTORY
-            DISEASE_DRUGS --> MEDICINE
-            RELATED_DISEASE --> HAVE_DISEASE
+    HAVE_DISEASE:
+        DISEASE_SYMPTOMS --> HAVE_SYMPTOM
+        DISEASE_SURGERY --> SURGERY_HISTORY
+        DISEASE_DRUGS --> MEDICINE
+        RELATED_DISEASE --> HAVE_DISEASE
 
-      HAVE_SYMPTOM:
-            RELATED_SYMPTOM --> HAVE_SYMPTOM
-            DISEASE_SYMPTOMS --> HAVE_DISEASE
+    HAVE_SYMPTOM:
+        RELATED_SYMPTOM --> HAVE_SYMPTOM
+        DISEASE_SYMPTOMS --> HAVE_DISEASE
 
-      """
+    """
 
     with open('data/dictionary/%s.txt' % SURGERY, 'rb') as f:
         surgery_dic = pickle.load(f)
@@ -179,23 +174,15 @@ def create_structure_data():
         medicine_dic = pickle.load(f)
     with open('data/dictionary/attribute.txt', 'rb') as f:
         attribute_dic = pickle.load(f)
-    # with open('dictionary/word.txt', 'rb') as f:
-    #       word_dic = pickle.load(f)
-    #       word_dic = {v:k for k,v in word_dic.items()}
-    #     此处的word_index为text_process处理后的text
     with open('data/raw_data/text_idx.txt', 'rb') as f:
         text = pickle.load(f)
 
-    #     XX_entities 记录（head_entity,tail_entity）,并且其中有重复
-    #     text中记录了每条数据中的‘主诉，现病史’
     related_disease_record, related_symptom_record = [], []
     disease_symptoms_record, disease_surgery_record, disease_drugs_record = [], [], []
     mentions_record, described_as_record = [], []
     count = 0
-    #     s_d_w = [symptom,disease,word1,word2,word3.......]
-    s_d_w = []
+    s_d_w = []  # s_d_w = [symptom,disease,word1,word2,word3.......]
     sym2dis_record = []  # 记录每条记录中疾病和症状的对应关系
-    dxy_dataset = []
     with open('data/raw_data/dataset.json', encoding='utf-8') as f:
         for line in f.readlines():
             dic = json.loads(line)
@@ -204,7 +191,7 @@ def create_structure_data():
             related_disease_entities, related_symptom_entities = [], []
             attribute_idxs, attribute_text = [], []
             for item in entity_result:
-                #     提取 RELATED_DISEASE 和 RELATED_SYMPTOM
+                #     提取 ATTRIBUTE, RELATED_DISEASE 和 RELATED_SYMPTOM
                 if item['type'] == HAVE_DISEASE:
                     related_disease_entities.append(have_disease_dic.get(item['entity'], 0))
                 elif item['type'] == HAVE_SYMPTOM:
@@ -212,31 +199,20 @@ def create_structure_data():
                 elif item['type'] in ATTRIBUTE:
                     attribute_idxs.append(attribute_dic.get(item['entity'], 0))
                     attribute_text.append(item['entity'])
-                #    获得的是所有医疗记录中的数据，目前共2009条
             related_disease_record.append(related_disease_entities)
             related_symptom_record.append(related_symptom_entities)
 
-            #     保存格式 （head_entity,tail_entity）
-            #     虽然共2009条数据，relation == DISEASE_SYMPTOM 的数据只有817条
             temp_dict = {}
             for item in relation_result:
-
                 if item['relation'] == DISEASE_SYMPTOM:
                     self_repo = list(set(text[count]))
                     disease = have_disease_dic.get(item['subject']['entity'], 0)
                     symptom = have_symptom_dic.get(item['object']['entity'], 0)
                     disease_symptoms_record.append((disease, symptom))
-
                     mentions_record.append((symptom, self_repo))
                     described_as_record.append((disease, self_repo))
-
-                    #     single_record = [[症状有]，[疾病有],[word],[属性idx],[属性text]]
-                    single_record = []
-                    single_record.append([symptom])
-                    single_record.append([disease])
-                    single_record.append(self_repo)
-                    single_record.append(list(set(attribute_idxs)))
-                    single_record.append(list(set(attribute_text)))
+                    single_record = [[symptom], [disease], self_repo, list(set(attribute_idxs)), list(
+                        set(attribute_text))]  # [[症状有]，[疾病有],[word],[属性idx],[属性text]]
                     s_d_w.append(single_record)
                     if not temp_dict.get(disease):
                         temp_dict.update({disease: [symptom]})
@@ -258,15 +234,14 @@ def create_structure_data():
             if temp_dict != {}:
                 sym2dis_record.append(temp_dict)
 
-    #     按照关系保存每条记录中的entity
-    #     例如 related_disease_tail 中第i行就是have_disease[i]的所有相关疾病
-    mentions_tail = create_re(mentions_record, have_symptom_dic_len)
-    described_as_tail = create_re(described_as_record, have_disease_dic_len)
-    related_disease_tail = create_relation(related_disease_record, have_disease_dic_len)
-    related_symptom_tail = create_relation(related_symptom_record, have_symptom_dic_len)
-    disease_symptoms_tail = create_re(disease_symptoms_record, have_disease_dic_len)
-    disease_surgery_tail = create_re(disease_surgery_record, have_disease_dic_len)
-    disease_drugs_tail = create_re(disease_drugs_record, have_disease_dic_len)
+    #     按照关系保存每条记录中的entity,例如 related_disease_tail 中第i行就是have_disease[i]的所有相关疾病
+    mentions_tail = create_sub_relation(mentions_record, have_symptom_dic_len)
+    described_as_tail = create_sub_relation(described_as_record, have_disease_dic_len)
+    related_disease_tail = create_main_relation(related_disease_record, have_disease_dic_len)
+    related_symptom_tail = create_main_relation(related_symptom_record, have_symptom_dic_len)
+    disease_symptoms_tail = create_sub_relation(disease_symptoms_record, have_disease_dic_len)
+    disease_surgery_tail = create_sub_relation(disease_surgery_record, have_disease_dic_len)
+    disease_drugs_tail = create_sub_relation(disease_drugs_record, have_disease_dic_len)
     with open('data/relation/related_disease_tail.txt', 'wb') as f:
         pickle.dump(related_disease_tail, f)
     with open('data/relation/related_symptom_tail.txt', 'wb') as f:
@@ -282,25 +257,17 @@ def create_structure_data():
     with open('data/relation/described_as_tail.txt', 'wb') as f:
         pickle.dump(described_as_tail, f)
 
-    random.seed(0)
     random.shuffle(sym2dis_record)
-    #     划分s_d_w作为测试集和训练集
-
     train_new = []
     test_new = []
-    train_dict = sym2dis_record[:int(0.82 * len(sym2dis_record))]
-    test_dict = sym2dis_record[int(0.82 * len(sym2dis_record)):]
+    train_dict = sym2dis_record[:int(0.8 * len(sym2dis_record))]
+    test_dict = sym2dis_record[int(0.8 * len(sym2dis_record)):]
     for item in train_dict:
         for dis in item:
             # int类型表明是疾病编号
             if type(dis) == int:
                 for sym in item[dis]:
-                    temp = []
-                    temp.append([sym])
-                    temp.append([dis])
-                    temp.append(item['word'])
-                    temp.append(item['attribute_idxs'])
-                    temp.append(item['attribute_text'])
+                    temp = [[sym], [dis], item['word'], item['attribute_idxs'], item['attribute_text']]
                     train_new.append(temp)
 
     for item in test_dict:
@@ -308,16 +275,9 @@ def create_structure_data():
             # int类型表明是疾病编号
             if type(dis) == int:
                 for sym in item[dis]:
-                    temp = []
-                    temp.append([sym])
-                    temp.append([dis])
-                    temp.append(item['word'])
-                    temp.append(item['attribute_idxs'])
-                    temp.append(item['attribute_text'])
+                    temp = [[sym], [dis], item['word'], item['attribute_idxs'], item['attribute_text']]
                     test_new.append(temp)
 
-    random.shuffle(test_new)
-    random.shuffle(train_new)
     #     test_agent文件需要text,train为dict类型
     test_list = []
     for i in test_new:
@@ -347,7 +307,7 @@ def create_structure_data():
 
 
 #     处理 RELATED_SYMPTOM,RELATED_DISEASE
-def create_relation(relation_entity_list, voc_len):
+def create_main_relation(relation_entity_list, voc_len):
     temp = [[] for i in range(voc_len)]
     for data in relation_entity_list:
         if len(data) == 0:
@@ -367,7 +327,7 @@ def create_relation(relation_entity_list, voc_len):
 
 
 #     处理 DISEASE_SYMPTOMS,DISEASE_SURGERY,DISEASE_DRUGS
-def create_re(mylist, v_len):
+def create_sub_relation(mylist, v_len):
     temp = [[] for i in range(v_len)]
     for i in mylist:
         head_index = i[0]
@@ -391,15 +351,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default=Medical)
     args = parser.parse_args()
-    # Create dataset
     # ========== BEGIN ========== #
-    # text_process()
-    # for i in ENTITIES:
-    #     create_dictionary(i)
-    # create_attribute_dictionary()
-    # create_structure_data()
+    text_process()
+    for i in ENTITIES:
+        create_dictionary(i)
+    create_attribute_dictionary()
+    create_structure_data()
 
-    # Create AmazonDataset instance for dataset.
     # ========== BEGIN ========== #
     print('Load', args.dataset, 'dataset from file...')
     if not os.path.isdir(TMP_DIR[args.dataset]):
