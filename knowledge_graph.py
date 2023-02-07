@@ -41,7 +41,7 @@ class KnowledgeGraph(object):
 
     def _load_reviews(self, dataset, word_tfidf_threshold=0, word_freq_threshold=200):
         print('Load reviews...')
-        # (1) Filter words by both tfidf and frequency.
+        #  Filter words by both tfidf and frequency.
         vocab = dataset.word.vocab
         reviews = [d[2] for d in dataset.review.data]
         review_tfidf = compute_tfidf_fast(vocab, reviews)
@@ -64,7 +64,7 @@ class KnowledgeGraph(object):
             all_remained_words.append(_remained_words)
             if len(remained_words) <= 0:
                 continue
-            # (2) Add edges.
+            # Add edges.
             self._add_edge(HAVE_SYMPTOM, uid, DISEASE_SYMPTOM, HAVE_DISEASE, pid)
             num_edges += 2
             for wid in remained_words:
@@ -184,28 +184,28 @@ class KnowledgeGraph(object):
         pattern = PATH_PATTERN[pattern_id]
         paths = []
         if pattern_id == 1:  # OK
-            wids_u = set(_get(HAVE_SYMPTOM, uid, MENTION))  # USER->MENTION->WORD
-            wids_p = set(_get(HAVE_DISEASE, pid, DESCRIBED_AS))  # PRODUCT->DESCRIBE->WORD
+            wids_u = set(_get(HAVE_SYMPTOM, uid, MENTION))  # SYMPTOM->MENTION->WORD
+            wids_p = set(_get(HAVE_DISEASE, pid, DESCRIBED_AS))  # DISEASE->DESCRIBE->WORD
             intersect_nodes = wids_u.intersection(wids_p)
             paths = [(uid, x, pid) for x in intersect_nodes]
         elif pattern_id in [11, 12, 13, 14, 15, 16, 17]:
-            pids_u = set(_get(HAVE_SYMPTOM, uid, DISEASE_SYMPTOM))  # USER->PURCHASE->PRODUCT
+            pids_u = set(_get(HAVE_SYMPTOM, uid, DISEASE_SYMPTOM))  # SYMPTOM-->DISEASE
             pids_u = pids_u.difference([pid])  # exclude target product
-            nodes_p = set(_get(HAVE_DISEASE, pid, pattern[3][0]))  # PRODUCT->relation->node2
+            nodes_p = set(_get(HAVE_DISEASE, pid, pattern[3][0]))  # DISEASE->relation->node2
             if pattern[2][1] == HAVE_SYMPTOM:
                 nodes_p.difference([uid])
             for pid_u in pids_u:
                 relation, entity_tail = pattern[2][0], pattern[2][1]
-                et_ids = set(_get(HAVE_DISEASE, pid_u, relation))  # USER->PURCHASE->PRODUCT->relation->node2
+                et_ids = set(_get(HAVE_DISEASE, pid_u, relation))  # SYMPTOM-->DISEASE->relation->node2
                 intersect_nodes = et_ids.intersection(nodes_p)
                 tmp_paths = [(uid, pid_u, x, pid) for x in intersect_nodes]
                 paths.extend(tmp_paths)
         elif pattern_id == 18:
-            wids_u = set(_get(HAVE_SYMPTOM, uid, MENTION))  # USER->MENTION->WORD
-            uids_p = set(_get(HAVE_DISEASE, pid, DISEASE_SYMPTOM))  # PRODUCT->PURCHASE->USER
-            uids_p = uids_p.difference([uid])  # exclude source user
+            wids_u = set(_get(HAVE_SYMPTOM, uid, MENTION))  # SYMPTOM->MENTION->WORD
+            uids_p = set(_get(HAVE_DISEASE, pid, DISEASE_SYMPTOM))  # DISEASE-->SYMPTOM
+            uids_p = uids_p.difference([uid])  # exclude source SYMPTOM
             for uid_p in uids_p:
-                wids_u_p = set(_get(HAVE_SYMPTOM, uid_p, MENTION))  # PRODUCT->PURCHASE->USER->MENTION->WORD
+                wids_u_p = set(_get(HAVE_SYMPTOM, uid_p, MENTION))  # DISEASE-->SYMPTOM->MENTION->WORD
                 intersect_nodes = wids_u.intersection(wids_u_p)
                 tmp_paths = [(uid, x, uid_p, pid) for x in intersect_nodes]
                 paths.extend(tmp_paths)
@@ -213,7 +213,7 @@ class KnowledgeGraph(object):
 
 
 def check_test_path(dataset_str, kg):
-    # Check if there exists at least one path for any user-product in test set.
+    # Check if there exists at least one path for any DISEASE-SYMPTOM in test set.
     test_user_products = load_labels(dataset_str, 'test')
     for uid in test_user_products:
         for pid in test_user_products[uid]:
