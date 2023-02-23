@@ -18,24 +18,23 @@
 - 代码目录结构
 
 ```undefined
-./repo_template               # 项目文件夹名称，可以修改为自己的文件夹名称
-|-- config                    # 配置类文件夹
-|   ├── competition.json      # 项目配置信息文件
-|-- dataset                   # 数据集类文件夹
+./repo_template               # 项目文件夹名称
+|-- data                      # 数据集一
+|-- medical_data              # 数据集二
 |   ├── dataset.py            # 数据集代码文件
-|-- log                       # 日志类文件夹
-|   ├── train.log             # 训练日志文件
-|-- model                     # 模型类文件夹
-|   ├── full_regression.pkl   # 训练好的模型文件
-|-- preprocess                # 预处理类文件夹
-|   ├── preprocess.py         # 数据预处理代码文件
-|-- tools                     # 工具类文件夹
-|   ├── train.py              # 训练代码文件
-|   ├── eval.py               # 验证代码文件
-|   ├── averaging_model.py    # 定义模型文件
-|-- main.py                   # 项目主文件
+|-- data_processor.py         # 针对数据集一的数据预处理文件
+|-- data_utils.py             # Dataset类文件
+|-- draw.py                   # 绘制曲线图
+|-- kg_env.py                 # 生成强化学习的环境
+|-- knowledge_graph.py        # 根据Dataset生成知识图谱
+|-- medical_processor.py      # 针对数据集二的预处理文件
+|-- test_agent.py             # 测试强化学习智能体
+|-- train_test.py             # 训练强化学习智能体
+|-- train_transe_model.py     # 知识图谱表示学习
+|-- transe_model.py           # 知识图谱模型
+|-- utils.py                  # 工具文件
 |-- README.md                 # 中文用户手册
-|-- LICENSE                   # LICENSE文件
+
 ```
 
 ### 5.2 代码简要说明
