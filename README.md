@@ -14,18 +14,18 @@
 
 ## 3. 执行流程简介
 
-- 运行train_transe_model.py, 学习知识图谱表示，学习结束后将每个实体和关系的表示保存。
-- 运行train_agent.py, 加载训练好的表示向量，训练强化学习智能体。
-- 运行test_agnent.py, 输出测试结果。
+- 运行train_transe_model.py 学习知识图谱表示，学习结束后将每个实体和关系的表示保存。
+- 运行train_agent.py 加载训练好的表示向量，训练强化学习智能体。
+- 运行test_agnent.py 输出测试结果。
 
 - 参数解释：
--- '--dataset': 选择Aier或Medical数据集
--- '--embedding_type': 知识图谱表示算法，可选择TransE，TransH，TransR
--- '--enhanced_type': 增强表示算法，可选择none，embedding，w2v
+ - '--dataset': 选择Aier或Medical数据集
+ - '--embedding_type': 知识图谱表示算法，可选择TransE，TransH，TransR
+ - '--enhanced_type': 增强表示算法，可选择none，embedding，w2v
 
--- '--max_acts': 强化学习候选项最大值
--- '--max_path_len': 生成路径长度
--- '--path_limit': 是否对路径生成进行限制
+ - '--max_acts': 强化学习候选项最大值
+ - '--max_path_len': 生成路径长度
+ - '--path_limit': 是否对路径生成进行限制
 
 
 
