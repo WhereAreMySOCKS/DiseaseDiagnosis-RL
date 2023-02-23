@@ -5,7 +5,7 @@
 - 尝试了基于TransE，TransH，TransR的知识图谱表示学习方法。
 
 - 强化学习方法使用了经典的Critic-Actor算法
-- **[在kaggle中打开](https://www.kaggle.com/code/lazurite137/hhhuge-blcp)**
+
 
 ## 2. 数据集
 
