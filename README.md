@@ -19,13 +19,13 @@
 - 运行test_agnent.py 输出测试结果。
 
 - 参数解释：
- - '--dataset': 选择Aier或Medical数据集
- - '--embedding_type': 知识图谱表示算法，可选择TransE，TransH，TransR
- - '--enhanced_type': 增强表示算法，可选择none，embedding，w2v
+    - '--dataset': 选择Aier或Medical数据集
+    - '--embedding_type': 知识图谱表示算法，可选择TransE，TransH，TransR
+    - '--enhanced_type': 增强表示算法，可选择none，embedding，w2v
 
- - '--max_acts': 强化学习候选项最大值
- - '--max_path_len': 生成路径长度
- - '--path_limit': 是否对路径生成进行限制
+    - '--max_acts': 强化学习候选项最大值
+    - '--max_path_len': 生成路径长度
+    - '--path_limit': 是否对路径生成进行限制
 
 
 
